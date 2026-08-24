@@ -12,12 +12,14 @@ const config = require('./config.js');
 
 const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
+  // Never echo the real API key back in a response. There's also no
+  // "apiKeyLoaded" field to report here — config.js's requireEnv()
+  // already throws at startup if it's missing, so by the time a
+  // request reaches this handler it's guaranteed to be set; getting
+  // any response at all is the proof that it loaded.
   res.end(JSON.stringify({
     message: 'server is running',
     environment: config.nodeEnv,
-    // Never echo the real API key back in a response — this redacts it
-    // to prove config loaded without leaking the secret.
-    apiKeyLoaded: Boolean(config.apiKey),
   }));
 });
 

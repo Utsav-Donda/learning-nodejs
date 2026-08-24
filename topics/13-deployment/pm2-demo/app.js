@@ -2,7 +2,11 @@
 // to see PM2 restart it with a new PID after a crash or `pm2 restart`.
 const http = require('node:http');
 
-const PORT = process.env.PORT || 3000;
+// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
+// convention meaning "let the OS assign a free port") since "0" is
+// truthy as a string but 0 is falsy as a number — checking for
+// undefined instead handles that correctly.
+const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
 
 const server = http.createServer((req, res) => {
   if (req.url === '/crash') {

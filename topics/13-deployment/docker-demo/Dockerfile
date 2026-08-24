@@ -4,8 +4,12 @@
 # Run:   docker run --rm -p 3000:3000 docker-demo
 # Then:  curl http://localhost:3000/health
 
-# Alpine keeps the image small; pin an exact LTS line rather than
-# "node:latest" so builds are reproducible.
+# Alpine keeps the image small. Using an exact tag instead of
+# "node:latest" avoids the worst case (an unpredictable major version
+# jump), but "node:22-alpine" still floats across patch releases of
+# Node and Alpine — for byte-for-byte reproducible builds, pin an exact
+# version or digest instead, e.g. node:22.14.0-alpine or
+# node@sha256:<digest>.
 FROM node:22-alpine
 
 WORKDIR /app
@@ -23,12 +27,15 @@ COPY . .
 # use it instead of running the app as root inside the container.
 USER node
 
+# Single source of truth for the port, referenced below by both EXPOSE
+# and HEALTHCHECK — override at run time with `docker run -e PORT=...`.
 ENV NODE_ENV=production
-EXPOSE 3000
+ENV PORT=3000
+EXPOSE $PORT
 
 # Lets `docker ps` and orchestrators see container health, not just
 # "the process hasn't exited" — matches the /health route in app.js.
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD wget -qO- http://localhost:${PORT}/health || exit 1
 
 CMD ["node", "app.js"]

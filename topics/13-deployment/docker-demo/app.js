@@ -3,7 +3,11 @@
 const express = require('express');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
+// convention meaning "let the OS assign a free port") since "0" is
+// truthy as a string but 0 is falsy as a number — checking for
+// undefined instead handles that correctly.
+const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
 
 app.get('/', (req, res) => {
   res.json({ message: 'hello from inside a container' });
