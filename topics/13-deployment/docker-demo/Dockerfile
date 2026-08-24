@@ -28,7 +28,12 @@ COPY . .
 USER node
 
 # Single source of truth for the port, referenced below by both EXPOSE
-# and HEALTHCHECK — override at run time with `docker run -e PORT=...`.
+# and HEALTHCHECK. If you override it, it MUST be a real, fixed port —
+# e.g. `docker run -e PORT=8080 -p 8080:8080 ...` (updating -p to match
+# is required too, or the host can't reach the new port). Unlike the
+# bare-metal/PM2 case, PORT=0 ("let the OS pick a free port") doesn't
+# make sense here: EXPOSE/HEALTHCHECK/port-publishing all need a port
+# that's known ahead of time, not one discovered after the app starts.
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE $PORT

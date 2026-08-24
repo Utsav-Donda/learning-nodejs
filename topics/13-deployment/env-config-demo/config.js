@@ -6,13 +6,21 @@ const path = require('node:path');
 // Node 20.6+ can load a .env file natively — no `dotenv` package needed.
 // In production, env vars are normally injected by the host/container
 // platform directly, so loading a .env file is optional and only makes
-// sense in local development. Catching the "file doesn't exist" error
-// avoids a separate fs.existsSync() call before every startup.
-try {
-  process.loadEnvFile(path.join(__dirname, '.env'));
-} catch (err) {
-  if (err.code !== 'ENOENT') throw err;
+// sense in local development. This repo's declared floor is Node
+// >=18.0.0 (package.json), where process.loadEnvFile doesn't exist at
+// all — guard for that first, since calling a missing function throws
+// a plain TypeError with no .code property, which the ENOENT check
+// below would otherwise rethrow and crash the module on older Node
+// even when there's simply no .env file to load.
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile(path.join(__dirname, '.env'));
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
 }
+// On Node <20.6, .env loading is silently skipped — env vars must be
+// exported in the shell instead (export API_KEY=... / set on Windows).
 
 function requireEnv(name) {
   const value = process.env[name];
