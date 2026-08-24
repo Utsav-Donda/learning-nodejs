@@ -11,6 +11,7 @@ const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { parsePort } = require('../parse-port.js');
+const { handleBindErrors } = require('../graceful-server.js');
 
 const app = express();
 
@@ -93,16 +94,7 @@ app.use((err, req, res, next) => {
 if (require.main === module) {
   const PORT = parsePort(process.env.PORT, 3000);
   const server = app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
-
-  // Without this, a bind failure (e.g. the port is already in use by
-  // another running demo) crashes the process with a raw, confusing
-  // stack trace instead of a clear message. Explicit process.exit()
-  // rather than just process.exitCode, for consistency with the other
-  // demos in this topic.
-  server.on('error', (err) => {
-    console.error('server error:', err.message);
-    process.exit(1);
-  });
+  handleBindErrors(server);
 }
 
 module.exports = app;

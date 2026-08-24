@@ -34,7 +34,7 @@ Deeper runtime and production-hardening topics for scaling and securing Node.js 
 ## Exercises
 
 1. Offload a CPU-intensive calculation to a worker thread and compare it against running it on the main thread. (See `worker-threads-demo.js`.)
-2. Add `helmet` and basic rate limiting to an existing Express app from an earlier topic. (See `security-hardening/`.)
+2. Add `helmet` and basic rate limiting to an existing Express app from an earlier topic — try it on topic 8's `jwt-auth-demo` or topic 10's `validated-api`. (`security-hardening/` shows the pattern on a small standalone app rather than modifying an earlier one directly, so you can compare your result against it.)
 
 ## Resources
 

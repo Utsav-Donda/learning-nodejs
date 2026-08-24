@@ -8,6 +8,7 @@
 const http = require('node:http');
 const { fibonacci } = require('./fibonacci.js');
 const { parsePort } = require('./parse-port.js');
+const { handleBindErrors } = require('./graceful-server.js');
 
 const PORT = parsePort(process.env.PORT, 3000);
 
@@ -35,19 +36,17 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ n, result, durationMs }));
 });
 
-server.listen(PORT, () => {
-  console.log(`[pid ${process.pid}] listening on http://localhost:${PORT}`);
-  console.log(`try: curl "http://localhost:${PORT}/?n=35"`);
-});
+// Binding to a port is a side effect — only do it when this file is
+// run directly, not when it's required (e.g. from a future test
+// importing the exported server), matching the require.main guard
+// every other server file in this repo uses.
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`[pid ${process.pid}] listening on http://localhost:${PORT}`);
+    console.log(`try: curl "http://localhost:${PORT}/?n=35"`);
+  });
 
-// Without this, a bind failure (e.g. the port is already in use by
-// another running demo) crashes the process with a raw, confusing
-// stack trace instead of a clear message. Explicit process.exit()
-// rather than just process.exitCode, for consistency with the other
-// demos in this topic.
-server.on('error', (err) => {
-  console.error('server error:', err.message);
-  process.exit(1);
-});
+  handleBindErrors(server);
+}
 
 module.exports = server;

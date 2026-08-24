@@ -9,6 +9,7 @@
 //   (immediately) Ctrl+C in the server's terminal
 const http = require('node:http');
 const { parsePort } = require('./parse-port.js');
+const { handleBindErrors, drainServer } = require('./graceful-server.js');
 
 const PORT = parsePort(process.env.PORT, 3000);
 
@@ -24,23 +25,6 @@ const server = http.createServer((req, res) => {
   res.end('ok\n');
 });
 
-server.listen(PORT, () => {
-  console.log(`[pid ${process.pid}] listening on http://localhost:${PORT}`);
-});
-
-// Without this, a bind failure (e.g. the port is already in use by
-// another running demo) crashes the process with a raw, confusing
-// stack trace instead of a clear message. Uses process.exit() rather
-// than just setting process.exitCode — this file also registers
-// SIGINT/SIGTERM listeners, and while a bind failure specifically
-// doesn't leave anything else keeping the event loop alive today, an
-// explicit exit() is the safer default to copy for any future demo
-// that might (matching cluster-demo.js's approach).
-server.on('error', (err) => {
-  console.error('server error:', err.message);
-  process.exit(1);
-});
-
 let shuttingDown = false;
 
 function shutdown(signal) {
@@ -48,9 +32,6 @@ function shutdown(signal) {
   shuttingDown = true;
   console.log(`\nreceived ${signal}, shutting down gracefully...`);
 
-  // Stops the server from accepting new connections, but — unlike just
-  // killing the process — waits for requests already in progress to
-  // finish before its callback fires.
   // Safety net: if something hangs (a request that never resolves, a
   // stuck DB connection) and server.close()'s callback never fires,
   // force-exit after a timeout rather than hanging forever. A real
@@ -63,31 +44,37 @@ function shutdown(signal) {
   }, FORCE_EXIT_MS);
   forceExitTimer.unref(); // doesn't itself keep the process alive if everything else already exited
 
-  server.close(() => {
+  // drainServer() stops the server from accepting new connections but
+  // — unlike just killing the process — waits for requests already in
+  // progress to finish, and closes idle keep-alive connections
+  // immediately so shutdown only actually waits on genuinely in-flight
+  // work (see graceful-server.js for why that distinction matters).
+  drainServer(server, () => {
     clearTimeout(forceExitTimer); // avoid a spurious force-exit timer left dangling on the clean path
     console.log('all in-flight requests finished, exiting cleanly');
     process.exit(0);
   });
-
-  // server.close()'s callback waits for EVERY open socket, including
-  // idle HTTP keep-alive connections with no request in flight — not
-  // just the /slow request this demo is built to showcase. Closing
-  // idle ones immediately means shutdown only actually waits on
-  // genuinely in-flight work, matching what "graceful shutdown" is
-  // meant to mean. closeIdleConnections() was only added in Node
-  // 18.2.0, while this repo's declared floor is >=18.0.0 (package.json)
-  // — feature-detect it rather than assuming it exists.
-  if (typeof server.closeIdleConnections === 'function') {
-    server.closeIdleConnections();
-  }
 }
 
-// Windows doesn't reliably deliver SIGTERM the way Linux/macOS do
-// (Node/libuv emulate SIGINT there via Ctrl+C, but not SIGTERM — see
-// cluster-demo.js's comment in this same topic for more on this) —
-// both handlers matter for real deployments, but on Windows, test this
-// with Ctrl+C specifically.
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+// Binding to a port and installing global signal handlers are side
+// effects — only do them when this file is run directly, not when
+// it's required (e.g. from a future test importing the exported
+// server), matching the require.main guard every other server file in
+// this repo uses.
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`[pid ${process.pid}] listening on http://localhost:${PORT}`);
+  });
+
+  handleBindErrors(server);
+
+  // Windows doesn't reliably deliver SIGTERM the way Linux/macOS do
+  // (Node/libuv emulate SIGINT there via Ctrl+C, but not SIGTERM — see
+  // cluster-demo.js's comment in this same topic for more on this) —
+  // both handlers matter for real deployments, but on Windows, test
+  // this with Ctrl+C specifically.
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+}
 
 module.exports = server;

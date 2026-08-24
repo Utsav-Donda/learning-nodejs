@@ -85,6 +85,12 @@ if (cluster.isPrimary) {
         `something is fundamentally broken (e.g. the port can't be bound at all). ` +
         `Giving up instead of restart-looping forever.`
       );
+      // Set BEFORE killing anything: killAllWorkers() below triggers
+      // more 'exit' events, and without this flag already true, this
+      // same handler could see one of those come back in and call
+      // cluster.fork() — forking a brand-new worker into a primary
+      // that's already in the middle of exiting.
+      shuttingDown = true;
       killAllWorkers();
       process.exit(1);
       return;
