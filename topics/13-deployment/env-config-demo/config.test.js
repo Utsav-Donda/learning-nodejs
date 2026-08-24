@@ -21,11 +21,20 @@ describe('config.js on a simulated Node <20.6 (no process.loadEnvFile)', () => {
   let originalLoadEnvFile;
   let originalNodeEnv;
   let originalApiKey;
+  let originalPort;
 
   beforeEach(() => {
     originalLoadEnvFile = process.loadEnvFile;
     originalNodeEnv = process.env.NODE_ENV;
     originalApiKey = process.env.API_KEY;
+    // config.js computes `port` (via parsePort) eagerly, at the same
+    // module-load time as the API_KEY check this suite exercises — an
+    // ambient PORT left over from the shell (or a prior test) could
+    // throw before NODE_ENV/API_KEY are ever consulted, breaking these
+    // tests for a reason unrelated to what they're actually checking.
+    // Clearing it here makes the suite hermetic against that.
+    originalPort = process.env.PORT;
+    delete process.env.PORT;
     // typeof undefined !== 'function', so this exercises the same
     // "unavailable" path the real guard checks for.
     process.loadEnvFile = undefined;
@@ -37,6 +46,8 @@ describe('config.js on a simulated Node <20.6 (no process.loadEnvFile)', () => {
     else process.env.NODE_ENV = originalNodeEnv;
     if (originalApiKey === undefined) delete process.env.API_KEY;
     else process.env.API_KEY = originalApiKey;
+    if (originalPort === undefined) delete process.env.PORT;
+    else process.env.PORT = originalPort;
     delete require.cache[configPath];
   });
 
