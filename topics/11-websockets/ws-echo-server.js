@@ -8,26 +8,43 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 8080;
 
-const wss = new WebSocketServer({ port: PORT });
+function createServer(port) {
+  const wss = new WebSocketServer({ port });
 
-wss.on('connection', (socket, req) => {
-  console.log(`client connected from ${req.socket.remoteAddress}`);
+  wss.on('connection', (socket, req) => {
+    console.log(`client connected from ${req.socket.remoteAddress}`);
 
-  socket.on('message', (data) => {
-    const text = data.toString();
-    console.log('received:', text);
-    socket.send(`[echo @ ${new Date().toISOString()}] ${text}`);
+    socket.on('message', (data) => {
+      const text = data.toString();
+      console.log('received:', text);
+      socket.send(`[echo @ ${new Date().toISOString()}] ${text}`);
+    });
+
+    socket.on('close', () => {
+      console.log('client disconnected');
+    });
+
+    socket.send('welcome! send me a message and I will echo it back.');
   });
 
-  socket.on('close', () => {
-    console.log('client disconnected');
+  wss.on('listening', () => {
+    console.log(`WebSocket server listening on ws://localhost:${port}`);
   });
 
-  socket.send('welcome! send me a message and I will echo it back.');
-});
+  // Without this, a bind failure (e.g. the port is already in use)
+  // surfaces as an uncaught exception and crashes the process.
+  wss.on('error', (err) => {
+    console.error('WebSocket server error:', err.message);
+    process.exitCode = 1;
+  });
 
-wss.on('listening', () => {
-  console.log(`WebSocket server listening on ws://localhost:${PORT}`);
-});
+  return wss;
+}
 
-module.exports = wss;
+// Binding to a port is a side effect — only do it when this file is run
+// directly, not when it's required (e.g. from a future test file).
+if (require.main === module) {
+  createServer(PORT);
+}
+
+module.exports = { createServer };

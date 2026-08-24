@@ -3,7 +3,12 @@
 // broadcast to both (including the sender), while a client in a
 // different room never sees it.
 //
-// Run: node test-client.js   (after starting server.js)
+// This is a manual demo, not an automated test (no assertions) — it's
+// deliberately NOT named test-*.js so `npm test` (node --test) doesn't
+// sweep it in as a fake test that always "passes" whether or not a
+// server is actually running.
+//
+// Run: node two-client-demo.js   (after starting server.js)
 const { io } = require('socket.io-client');
 
 const PORT = process.env.PORT || 3000;

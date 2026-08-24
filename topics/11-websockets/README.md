@@ -24,8 +24,8 @@ Requires `ws`, `socket.io`, and `socket.io-client` — already listed in the rep
 
 - [`ws-echo-server.js`](ws-echo-server.js) + [`ws-echo-client.js`](ws-echo-client.js) — a raw WebSocket echo server and a scripted client that connects, sends two messages, and logs the echoes (exercise 1 solution — open [socketio-chat/public/index.html](socketio-chat/public/index.html) below for the browser-client half of that exercise).
   `node ws-echo-server.js` then, in another terminal, `node ws-echo-client.js`
-- [`socketio-chat/`](socketio-chat/) — a room-based chat server: [`server.js`](socketio-chat/server.js) (join-room + broadcast logic), [`public/index.html`](socketio-chat/public/index.html) (browser client), and [`test-client.js`](socketio-chat/test-client.js) (a scripted two-user demo proving messages stay scoped to their room) (exercise 2 solution).
-  `node socketio-chat/server.js`, then open `http://localhost:3000` in two tabs, or run `node socketio-chat/test-client.js`
+- [`socketio-chat/`](socketio-chat/) — a room-based chat server: [`server.js`](socketio-chat/server.js) (join-room + broadcast logic, with room-switching handled via `socket.leave()`), [`public/index.html`](socketio-chat/public/index.html) (browser client), and [`two-client-demo.js`](socketio-chat/two-client-demo.js) (a scripted two-user demo proving messages stay scoped to their room) (exercise 2 solution).
+  `node socketio-chat/server.js`, then open `http://localhost:3000` in two tabs, or run `node socketio-chat/two-client-demo.js`
 - [`pubsub-concept.js`](pubsub-concept.js) — simulates why a single in-memory broadcast doesn't scale past one server instance, and how a shared pub/sub broker (e.g. Redis) fixes it.
   `node pubsub-concept.js`
 
