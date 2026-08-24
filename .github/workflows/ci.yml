@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # package.json's "engines" floor (>=18.0.0) applies to the repo
-        # as a whole; individual demos can need more (e.g. topic 13's
-        # env-config-demo needs 20.6+ for process.loadEnvFile — noted
-        # in its own README/comments rather than raised globally, since
-        # the rest of the curriculum doesn't need it). This matrix just
-        # tests the current LTS lines, which happen to cover that case.
-        node-version: [20.x, 22.x]
+        # Matches package.json's declared "engines" floor (>=18.0.0)
+        # plus the current LTS lines. 18.x is what actually exercises
+        # that floor — env-config-demo's config.js needs Node 20.6+ for
+        # process.loadEnvFile, but it guards for older Node explicitly
+        # (see config.test.js) rather than requiring the whole repo to
+        # raise its floor for one demo's optional feature.
+        node-version: [18.x, 20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v4

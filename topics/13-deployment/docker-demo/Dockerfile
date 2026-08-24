@@ -34,6 +34,14 @@ USER node
 # bare-metal/PM2 case, PORT=0 ("let the OS pick a free port") doesn't
 # make sense here: EXPOSE/HEALTHCHECK/port-publishing all need a port
 # that's known ahead of time, not one discovered after the app starts.
+#
+# Note: EXPOSE is resolved once at build time (it's documentation
+# metadata for `docker run -P` and image inspection, not a live setting)
+# — a `docker run -e PORT=8080` override changes what the app actually
+# listens on and what HEALTHCHECK checks (which reads the live env var
+# at container-run time), but the image's baked-in EXPOSE metadata
+# still reports 3000. Rebuild the image with a different ENV PORT if
+# you want EXPOSE itself to change.
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE $PORT
