@@ -139,7 +139,11 @@ if (cluster.isPrimary) {
     // connections, not just in-flight requests — closing those
     // immediately means this worker only actually waits on genuine
     // in-flight work (see graceful-shutdown-demo.js for more on this).
-    server.closeIdleConnections();
+    // Feature-detected because it was only added in Node 18.2.0, while
+    // this repo's declared floor is >=18.0.0 (package.json).
+    if (typeof server.closeIdleConnections === 'function') {
+      server.closeIdleConnections();
+    }
   }
 
   // Two independent paths can trigger a graceful drain here: the IPC

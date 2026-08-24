@@ -11,7 +11,18 @@ function parsePort(value, fallback) {
   // through to Number(''), since both Number('') and Number(' ')
   // evaluate to 0 and would be indistinguishable from an intentional
   // PORT=0.
-  if (value === undefined || value.trim() === '') return fallback;
+  //
+  // env vars (this function's only real-world input) are always
+  // strings or undefined, never anything else — but String(value)
+  // instead of value.trim() means a future caller passing some other
+  // type (e.g. a number from a config object) gets this function's
+  // clear "invalid PORT" error below instead of an unrelated
+  // "value.trim is not a function" TypeError. null is treated the same
+  // as undefined ("not provided") rather than falling through to
+  // Number(null), which is a JS quirk that evaluates to 0 — that would
+  // otherwise silently and incorrectly resolve to the same thing as an
+  // explicit PORT=0.
+  if (value === undefined || value === null || String(value).trim() === '') return fallback;
 
   const parsed = Number(value);
   // Upper-bounded at 65535 (the max TCP port) so an out-of-range or

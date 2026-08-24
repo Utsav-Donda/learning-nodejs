@@ -59,10 +59,14 @@ function shutdown(signal) {
   // server.close()'s callback waits for EVERY open socket, including
   // idle HTTP keep-alive connections with no request in flight — not
   // just the /slow request this demo is built to showcase. Closing
-  // idle ones immediately (available since Node 18.2) means shutdown
-  // only actually waits on genuinely in-flight work, matching what
-  // "graceful shutdown" is meant to mean.
-  server.closeIdleConnections();
+  // idle ones immediately means shutdown only actually waits on
+  // genuinely in-flight work, matching what "graceful shutdown" is
+  // meant to mean. closeIdleConnections() was only added in Node
+  // 18.2.0, while this repo's declared floor is >=18.0.0 (package.json)
+  // — feature-detect it rather than assuming it exists.
+  if (typeof server.closeIdleConnections === 'function') {
+    server.closeIdleConnections();
+  }
 }
 
 // Windows doesn't reliably deliver SIGTERM the way Linux/macOS do
