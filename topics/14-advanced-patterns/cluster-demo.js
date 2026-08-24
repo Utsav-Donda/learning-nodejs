@@ -37,15 +37,37 @@ if (cluster.isPrimary) {
     cluster.fork();
   }
 
+  // Forcefully kills every remaining worker — used both by the
+  // restart-loop giveup below and the force-exit safety net further
+  // down. On POSIX, a child process isn't automatically terminated
+  // just because its parent calls process.exit() — it gets reparented
+  // and keeps running, so anything still alive at either giveup point
+  // needs to be killed explicitly first, or it'd be silently orphaned,
+  // left bound to the port.
+  function killAllWorkers() {
+    for (const worker of Object.values(cluster.workers)) worker.process.kill('SIGKILL');
+  }
+
   // Caps how many times workers can be respawned in a short window —
   // matches topic 13's PM2 max_restarts idea. Without this, a
   // fundamental failure every worker hits identically (e.g. the port
   // can't be bound at all: permission denied, or already in use) would
   // crash-and-refork every worker forever, flooding the console and
   // burning CPU without ever serving a request.
+  //
+  // This is deliberately generous rather than tight: the demo's own
+  // /crash route exists specifically so you can manually kill a worker
+  // and watch it get replaced — from the primary's perspective, that
+  // looks identical to a real crash loop, and a MAX_RESTARTS set too
+  // low would make ordinary exploration of /crash accidentally bring
+  // the whole cluster down. A genuine binding failure (all workers
+  // dying near-instantly, repeatedly, with no human in the loop) blows
+  // past this threshold within a couple of seconds regardless of
+  // exactly where it's set; manual curl testing of /crash is very
+  // unlikely to hit 20 requests inside a 5-second window.
   const restartTimestamps = [];
-  const MAX_RESTARTS = 5;
-  const RESTART_WINDOW_MS = 10_000;
+  const MAX_RESTARTS = 20;
+  const RESTART_WINDOW_MS = 5_000;
 
   cluster.on('exit', (worker, code, signal) => {
     console.log(`worker ${worker.process.pid} died (code ${code}, signal ${signal})`);
@@ -63,12 +85,7 @@ if (cluster.isPrimary) {
         `something is fundamentally broken (e.g. the port can't be bound at all). ` +
         `Giving up instead of restart-looping forever.`
       );
-      // On POSIX, a child process isn't automatically terminated just
-      // because its parent calls process.exit() — it gets reparented
-      // and keeps running. Without this, any workers that are still
-      // healthy at this point would be orphaned, left silently bound
-      // to the port, contradicting the "giving up" message below.
-      for (const worker of Object.values(cluster.workers)) worker.process.kill('SIGKILL');
+      killAllWorkers();
       process.exit(1);
       return;
     }
@@ -135,10 +152,10 @@ if (cluster.isPrimary) {
       // reason this timer fires at all) won't give. Node's own
       // worker.kill() would still attempt a graceful IPC disconnect
       // before escalating to a signal, so it isn't forceful enough
-      // here either. worker.process.kill('SIGKILL') goes straight to
-      // the OS, bypassing the worker's own code entirely — it can't be
-      // caught, ignored, or delayed.
-      for (const worker of Object.values(cluster.workers)) worker.process.kill('SIGKILL');
+      // here either — killAllWorkers() (defined above) goes straight
+      // to the OS with SIGKILL, bypassing the worker's own code
+      // entirely, which can't be caught, ignored, or delayed.
+      killAllWorkers();
       process.exit(1);
     }, 10_000);
     forceExitTimer.unref();

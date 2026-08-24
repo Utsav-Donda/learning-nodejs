@@ -47,6 +47,14 @@ describe('parsePort', () => {
     assert.throws(() => parsePort('abc', 3000), /invalid PORT/);
   });
 
+  test('rejects hex, octal, binary, and exponential notation — only plain decimal digits are accepted', () => {
+    // Bare Number(x) accepts all of these, which nobody writing
+    // PORT=80 in an env file means to opt into.
+    for (const value of ['0x50', '0o120', '0b1010000', '5e1']) {
+      assert.throws(() => parsePort(value, 3000), /invalid PORT/, `expected "${value}" to be rejected`);
+    }
+  });
+
   test('rejects a non-integer value', () => {
     assert.throws(() => parsePort('3000.5', 3000), /invalid PORT/);
   });
