@@ -1,0 +1,13 @@
+{
+  "name": "docker-demo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A minimal Express app used to demonstrate containerizing a Node.js service.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
