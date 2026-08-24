@@ -21,7 +21,12 @@ Connecting Node.js apps to relational and document databases.
 
 ## Examples
 
-Add runnable scripts here, e.g. `pg-crud.js`, `mongo-crud.js`, `prisma-demo/`.
+Requires `pg` and `mongodb` — already listed in the repo root [package.json](../../package.json); run `npm install` at the repo root first. Both scripts need a real database running locally (or reachable via the URI env vars below) — without one, they log a clear connection error and exit rather than hang.
+
+- [`pg-crud.js`](pg-crud.js) — full CRUD against PostgreSQL with the `pg` driver, using parameterized (`$1`, `$2`) queries throughout to prevent SQL injection.
+  `DATABASE_URL=postgres://user:pass@localhost:5432/dbname node pg-crud.js`
+- [`mongo-crud.js`](mongo-crud.js) — full CRUD against MongoDB with the official driver directly (no ODM), to see what an ODM like Mongoose abstracts away.
+  `MONGODB_URI=mongodb://localhost:27017 node mongo-crud.js`
 
 ## Exercises
 

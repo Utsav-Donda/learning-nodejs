@@ -1,0 +1,9 @@
+{
+  "name": "esm-module-demo",
+  "private": true,
+  "type": "module",
+  "description": "Nested package.json that scopes this folder to ES modules, independent of the repo root's CommonJS default.",
+  "scripts": {
+    "start": "node index.js"
+  }
+}

@@ -20,7 +20,11 @@ Reading, writing, and watching files with Node's built-in `fs` module.
 
 ## Examples
 
-Add runnable scripts here, e.g. `read-write-demo.js`, `watch-directory.js`.
+- [`read-write-demo.js`](read-write-demo.js) — writes and reads back a scratch file using the sync, callback, and `fs/promises` APIs side by side.
+- [`directory-stats.js`](directory-stats.js) — lists a directory's contents with file sizes (exercise 1 solution).
+  `node directory-stats.js [dir]`
+- [`watch-directory.js`](watch-directory.js) — watches a folder and logs changes as they happen (exercise 2 solution). Long-running — stop with Ctrl+C.
+  `node watch-directory.js [dir]`
 
 ## Exercises
 
