@@ -32,6 +32,13 @@ function requireEnv(name) {
 }
 
 const config = {
+  // Note: PORT validation is NOT bypassed under NODE_ENV=test the way
+  // API_KEY is below — an invalid PORT (e.g. "abc" or "99999") still
+  // throws even in test mode. That's intentional: the API_KEY bypass
+  // exists so tests don't need a real secret, not so config validation
+  // in general can be skipped. Tests that don't care about PORT should
+  // clear process.env.PORT themselves rather than relying on test mode
+  // to ignore it (see config.test.js's beforeEach).
   port: parsePort(process.env.PORT, 3000),
   nodeEnv: process.env.NODE_ENV || 'development',
   // Only enforce API_KEY outside tests, so the demo app can still boot
