@@ -23,20 +23,26 @@ class UppercaseTransform extends Transform {
 async function main() {
   await fs.promises.writeFile(inputPath, 'hello streams\nthis text will be uppercased\nline by line\n');
 
-  // pipeline() connects readable -> transform -> writable, and — unlike
-  // manually chaining .pipe() calls — automatically propagates errors
-  // and cleans up (destroys) every stream if any one of them fails.
-  await pipeline(
-    fs.createReadStream(inputPath),
-    new UppercaseTransform(),
-    fs.createWriteStream(outputPath)
-  );
+  try {
+    // pipeline() connects readable -> transform -> writable, and —
+    // unlike manually chaining .pipe() calls — automatically propagates
+    // errors and cleans up (destroys) every stream if any one fails.
+    await pipeline(
+      fs.createReadStream(inputPath),
+      new UppercaseTransform(),
+      fs.createWriteStream(outputPath)
+    );
 
-  const result = await fs.promises.readFile(outputPath, 'utf-8');
-  console.log('output file contents:\n' + result);
-
-  await fs.promises.rm(inputPath, { force: true });
-  await fs.promises.rm(outputPath, { force: true });
+    const result = await fs.promises.readFile(outputPath, 'utf-8');
+    console.log('output file contents:\n' + result);
+  } finally {
+    // Clean up even if the pipeline or the read above failed, so a
+    // broken run doesn't leave scratch files behind.
+    await Promise.all([
+      fs.promises.rm(inputPath, { force: true }),
+      fs.promises.rm(outputPath, { force: true }),
+    ]);
+  }
 }
 
 main().catch((err) => {

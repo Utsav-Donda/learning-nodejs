@@ -44,10 +44,12 @@ function generateFile() {
 
 // Counts lines with a streaming readline interface — at no point is the
 // full file content held in memory at once.
-function countLines(path) {
+function countLines(targetPath) {
+  // Named targetPath, not path, so it doesn't shadow the node:path
+  // module imported above.
   return new Promise((resolve, reject) => {
     const rl = readline.createInterface({
-      input: fs.createReadStream(path),
+      input: fs.createReadStream(targetPath),
       crlfDelay: Infinity,
     });
 
@@ -65,18 +67,26 @@ async function main() {
   console.log(`generating a file with ${LINE_COUNT.toLocaleString('en-US')} lines...`);
   await generateFile();
 
-  const stats = await fs.promises.stat(filePath);
-  console.log(`file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+  try {
+    const stats = await fs.promises.stat(filePath);
+    console.log(`file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
-  const before = process.memoryUsage().heapUsed;
-  const lineCount = await countLines(filePath);
-  const after = process.memoryUsage().heapUsed;
+    const before = process.memoryUsage().heapUsed;
+    const lineCount = await countLines(filePath);
+    const after = process.memoryUsage().heapUsed;
 
-  console.log(`counted ${lineCount.toLocaleString('en-US')} lines`);
-  console.log(`heap growth while counting: ${((after - before) / 1024).toFixed(1)} KB`);
-  console.log('(stays small regardless of file size — the whole file was never loaded at once)');
-
-  await fs.promises.rm(filePath, { force: true });
+    console.log(`counted ${lineCount.toLocaleString('en-US')} lines`);
+    // heapUsed can occasionally show a *negative* delta if garbage
+    // collection happens to run between the two measurements — that's
+    // not a bug, it just means V8 reclaimed memory during counting.
+    // Either way, the number stays in the tens/hundreds of KB, not the
+    // ~8MB the file itself takes up, which is the point of this demo.
+    console.log(`heap delta while counting: ${((after - before) / 1024).toFixed(1)} KB (small either way — the whole file was never loaded at once)`);
+  } finally {
+    // Clean up even if stat/counting failed above, so a broken run
+    // doesn't leave an 8MB scratch file behind.
+    await fs.promises.rm(filePath, { force: true });
+  }
 }
 
 main().catch((err) => {
