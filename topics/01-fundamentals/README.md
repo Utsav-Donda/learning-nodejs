@@ -20,7 +20,12 @@ The Node.js runtime, its event-driven architecture, and the basics that everythi
 
 ## Examples
 
-Add runnable scripts here as you work through the concepts, e.g. `event-loop-order.js`, `globals-demo.js`, `esm-vs-cjs/`.
+- [`event-loop-order.js`](event-loop-order.js) — logs execution order across sync code, `process.nextTick`, promises, `setTimeout`, and `setImmediate`.
+  `node event-loop-order.js`
+- [`globals-demo.js`](globals-demo.js) — explores `process`, `__dirname`/`__filename`, and `Buffer`.
+  `node globals-demo.js arg1 --flag=value`
+- [`esm-vs-cjs/`](esm-vs-cjs/) — the same `greet()` module written twice: [`cjs-module.js`](esm-vs-cjs/cjs-module.js) (CommonJS) and [`esm-module.mjs`](esm-vs-cjs/esm-module.mjs) (ESM), each with a runner.
+  `node esm-vs-cjs/run-cjs.js` and `node esm-vs-cjs/run-esm.mjs`
 
 ## Exercises
 

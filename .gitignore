@@ -38,6 +38,10 @@ pids/
 *.seed
 *.pid.lock
 
+# Scratch files created by running the examples
+.scratch-demo.txt
+watched-tmp/
+
 # Package manager
 .npm/
 .yarn/cache/

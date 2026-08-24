@@ -21,7 +21,15 @@ Common authentication patterns for Node.js web apps and APIs.
 
 ## Examples
 
-Add runnable scripts here, e.g. `password-hashing.js`, `jwt-auth-demo/`, `session-auth-demo/`.
+Requires `bcryptjs` and `jsonwebtoken` (plus `express` for the server demo) — already listed in the repo root [package.json](../../package.json); run `npm install` at the repo root first.
+
+- [`password-hashing.js`](password-hashing.js) — hashes and verifies a password with bcrypt, and shows why the same password produces a different hash each time (salting).
+- [`jwt-auth-demo/`](jwt-auth-demo/) — a signup/login flow (`/signup`, `/login`) that hashes passwords and issues a JWT, plus a `requireAuth` middleware that protects `/me` by verifying the token (exercises 1 & 2 solution).
+  `node jwt-auth-demo/server.js`
+
+## A note on the JWT secret
+
+The demo server uses a hardcoded fallback secret purely so it runs out of the box — in any real app, `JWT_SECRET` must come from an environment variable or secret manager and never be committed.
 
 ## Exercises
 

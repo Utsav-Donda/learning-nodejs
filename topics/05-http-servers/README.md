@@ -20,7 +20,12 @@ Building an HTTP server from scratch with Node's built-in `http` module, before 
 
 ## Examples
 
-Add runnable scripts here, e.g. `hello-server.js`, `manual-router.js`, `json-api-no-framework.js`.
+- [`hello-server.js`](hello-server.js) — the smallest possible server: one handler, plain text response.
+- [`manual-router.js`](manual-router.js) — routes by method + path using `URL` and a plain if/else chain, no framework (exercise 1 solution).
+- [`json-api-no-framework.js`](json-api-no-framework.js) — manually buffers and parses a JSON request body, then echoes it back (exercise 2 solution).
+
+Each listens on port 3000 by default (override with `PORT=xxxx node <file>.js`).
+`node hello-server.js` then `curl http://localhost:3000`.
 
 ## Exercises
 

@@ -22,7 +22,12 @@ Designing and building well-structured REST APIs.
 
 ## Examples
 
-Add runnable examples here, e.g. `validated-api/`, `pagination-demo.js`.
+Requires `express` — already listed in the repo root [package.json](../../package.json); run `npm install` at the repo root first.
+
+- [`validated-api/`](validated-api/) — full CRUD for a `todos` resource under `/api/v1`, with hand-rolled request validation ([`validation.js`](validated-api/validation.js)), a consistent `{ error: { message, details } }` shape for every failure, and correct status codes (200/201/204/404/422) (exercise 1 solution).
+  `node validated-api/server.js`
+- [`pagination-demo.js`](pagination-demo.js) — a `/products` list endpoint supporting `?page=`/`?pageSize=` pagination, `?category=` filtering, and `?sort=field`/`?sort=-field` sorting (exercise 2 solution).
+  `node pagination-demo.js`
 
 ## Exercises
 

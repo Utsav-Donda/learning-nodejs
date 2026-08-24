@@ -21,7 +21,12 @@ The core async patterns used throughout Node.js: callbacks, promises, and async/
 
 ## Examples
 
-Add runnable scripts here, e.g. `callback-hell.js`, `promise-chaining.js`, `async-await-errors.js`.
+- [`callback-hell.js`](callback-hell.js) — a 3-step dependent flow using nested error-first callbacks.
+- [`promise-chaining.js`](promise-chaining.js) — the same flow flattened with `.then()`/`.catch()`.
+- [`async-await-errors.js`](async-await-errors.js) — the same flow again with `async`/`await` and `try`/`catch`, including a guarded top-level call to avoid unhandled rejections.
+- [`promise-combinators.js`](promise-combinators.js) — side-by-side comparison of `Promise.all`, `Promise.allSettled`, and `Promise.race`.
+
+Run any of them with `node <file>.js`.
 
 ## Exercises
 

@@ -21,7 +21,11 @@ Organizing code into modules and managing dependencies with npm.
 
 ## Examples
 
-Add runnable scripts/mini-packages here, e.g. `local-module/`, `npm-scripts-demo/`.
+- [`local-module/`](local-module/) — a two-file CommonJS project (`math.js` exporting functions, consumed by `index.js`).
+  `node local-module/index.js`
+- [`esm-module-demo/`](esm-module-demo/) — a nested `package.json` with `"type": "module"`, showing how ESM can be scoped to a subfolder independent of the repo root.
+  `cd esm-module-demo && npm start`
+- [`semver-cheatsheet.md`](semver-cheatsheet.md) — quick reference for version ranges (`^`, `~`, exact) and lockfile commands.
 
 ## Exercises
 
