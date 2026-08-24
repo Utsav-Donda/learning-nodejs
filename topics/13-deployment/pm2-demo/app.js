@@ -2,11 +2,23 @@
 // to see PM2 restart it with a new PID after a crash or `pm2 restart`.
 const http = require('node:http');
 
-// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
-// convention meaning "let the OS assign a free port") since "0" is
-// truthy as a string but 0 is falsy as a number — checking for
-// undefined instead handles that correctly.
-const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
+// Deliberately duplicated (not imported) from env-config-demo's
+// config.js — PM2 runs this file directly by path, so keeping it
+// self-contained avoids a cross-directory require.
+function parsePort(value, fallback) {
+  // Unset or set-but-empty ("PORT=") both fall back to the default.
+  // PORT=0 (a real convention meaning "let the OS assign a free port")
+  // must NOT be treated as falsy and overridden the way a naive
+  // `Number(x) || fallback` would do.
+  if (value === undefined || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+    throw new Error(`invalid PORT: "${value}"`);
+  }
+  return parsed;
+}
+
+const PORT = parsePort(process.env.PORT, 3000);
 
 const server = http.createServer((req, res) => {
   if (req.url === '/crash') {

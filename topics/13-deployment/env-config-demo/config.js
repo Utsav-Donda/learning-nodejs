@@ -32,7 +32,10 @@ function parsePort(value, fallback) {
   // from an intentional PORT=0.
   if (value === undefined || value === '') return fallback;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) {
+  // Upper-bounded at 65535 (the max TCP port) so an out-of-range value
+  // fails here with a clear message instead of reaching
+  // server.listen(), which throws a much less obvious RangeError.
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
     throw new Error(`invalid PORT: "${value}"`);
   }
   return parsed;

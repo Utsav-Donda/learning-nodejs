@@ -10,9 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Matches the floor declared in package.json's "engines" field
-        # (>=20.6.0, required by env-config-demo's use of
-        # process.loadEnvFile) plus the current LTS line.
+        # package.json's "engines" floor (>=18.0.0) applies to the repo
+        # as a whole; individual demos can need more (e.g. topic 13's
+        # env-config-demo needs 20.6+ for process.loadEnvFile — noted
+        # in its own README/comments rather than raised globally, since
+        # the rest of the curriculum doesn't need it). This matrix just
+        # tests the current LTS lines, which happen to cover that case.
         node-version: [20.x, 22.x]
 
     steps:

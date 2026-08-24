@@ -3,11 +3,25 @@
 const express = require('express');
 
 const app = express();
-// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
-// convention meaning "let the OS assign a free port") since "0" is
-// truthy as a string but 0 is falsy as a number — checking for
-// undefined instead handles that correctly.
-const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
+
+// Deliberately duplicated (not imported) from env-config-demo's
+// config.js — this app is meant to be self-contained so the Dockerfile
+// alongside it can `COPY . .` and build without reaching outside this
+// directory.
+function parsePort(value, fallback) {
+  // Unset or set-but-empty ("PORT=") both fall back to the default.
+  // PORT=0 (a real convention meaning "let the OS assign a free port")
+  // must NOT be treated as falsy and overridden the way a naive
+  // `Number(x) || fallback` would do.
+  if (value === undefined || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+    throw new Error(`invalid PORT: "${value}"`);
+  }
+  return parsed;
+}
+
+const PORT = parsePort(process.env.PORT, 3000);
 
 app.get('/', (req, res) => {
   res.json({ message: 'hello from inside a container' });

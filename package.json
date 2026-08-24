@@ -5,7 +5,7 @@
   "description": "A structured, self-paced curriculum for learning Node.js from the ground up.",
   "type": "commonjs",
   "engines": {
-    "node": ">=20.6.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "test": "node --test"
