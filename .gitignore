@@ -42,6 +42,8 @@ pids/
 .scratch-demo.txt
 .scratch-*
 watched-tmp/
+*.cpuprofile
+isolate-*-v8.log
 
 # Package manager
 .npm/
