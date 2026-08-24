@@ -30,10 +30,15 @@ server.listen(PORT, () => {
 
 // Without this, a bind failure (e.g. the port is already in use by
 // another running demo) crashes the process with a raw, confusing
-// stack trace instead of a clear message.
+// stack trace instead of a clear message. Uses process.exit() rather
+// than just setting process.exitCode — this file also registers
+// SIGINT/SIGTERM listeners, and while a bind failure specifically
+// doesn't leave anything else keeping the event loop alive today, an
+// explicit exit() is the safer default to copy for any future demo
+// that might (matching cluster-demo.js's approach).
 server.on('error', (err) => {
   console.error('server error:', err.message);
-  process.exitCode = 1;
+  process.exit(1);
 });
 
 let shuttingDown = false;

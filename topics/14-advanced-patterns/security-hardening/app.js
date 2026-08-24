@@ -96,10 +96,12 @@ if (require.main === module) {
 
   // Without this, a bind failure (e.g. the port is already in use by
   // another running demo) crashes the process with a raw, confusing
-  // stack trace instead of a clear message.
+  // stack trace instead of a clear message. Explicit process.exit()
+  // rather than just process.exitCode, for consistency with the other
+  // demos in this topic.
   server.on('error', (err) => {
     console.error('server error:', err.message);
-    process.exitCode = 1;
+    process.exit(1);
   });
 }
 

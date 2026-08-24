@@ -57,12 +57,18 @@ if (cluster.isPrimary) {
       restartTimestamps.shift();
     }
 
-    if (restartTimestamps.length > MAX_RESTARTS) {
+    if (restartTimestamps.length >= MAX_RESTARTS) {
       console.error(
         `${restartTimestamps.length} workers died within ${RESTART_WINDOW_MS}ms — ` +
         `something is fundamentally broken (e.g. the port can't be bound at all). ` +
         `Giving up instead of restart-looping forever.`
       );
+      // On POSIX, a child process isn't automatically terminated just
+      // because its parent calls process.exit() — it gets reparented
+      // and keeps running. Without this, any workers that are still
+      // healthy at this point would be orphaned, left silently bound
+      // to the port, contradicting the "giving up" message below.
+      for (const worker of Object.values(cluster.workers)) worker.process.kill('SIGKILL');
       process.exit(1);
       return;
     }
@@ -123,13 +129,15 @@ if (cluster.isPrimary) {
     // closed rather than hanging forever.
     const forceExitTimer = setTimeout(() => {
       console.error('workers did not exit in time — forcing shutdown');
-      // worker.kill() (used for the graceful path above) actually
-      // attempts a graceful IPC disconnect first and only escalates to
-      // an OS signal once that completes — exactly the negotiation a
-      // genuinely stuck worker (the only reason this timer fires at
-      // all) won't honor. worker.process.kill('SIGKILL') goes straight
-      // to the OS, bypassing the worker's own code entirely — it can't
-      // be caught, ignored, or delayed the way SIGTERM can.
+      // The graceful path above sends a custom 'shutdown' IPC message
+      // and waits for the worker to drain and exit on its own —
+      // exactly the cooperation a genuinely stuck worker (the only
+      // reason this timer fires at all) won't give. Node's own
+      // worker.kill() would still attempt a graceful IPC disconnect
+      // before escalating to a signal, so it isn't forceful enough
+      // here either. worker.process.kill('SIGKILL') goes straight to
+      // the OS, bypassing the worker's own code entirely — it can't be
+      // caught, ignored, or delayed.
       for (const worker of Object.values(cluster.workers)) worker.process.kill('SIGKILL');
       process.exit(1);
     }, 10_000);
