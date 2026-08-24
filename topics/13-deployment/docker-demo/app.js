@@ -21,7 +21,12 @@ app.get('/health', (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
+  const server = app.listen(PORT, () => {
+    // Read back the actual bound port — with PORT=0 ("let the OS
+    // assign a free port"), the OS-chosen port is only known via
+    // server.address(), not the PORT const itself.
+    console.log(`listening on http://localhost:${server.address().port}`);
+  });
 }
 
 module.exports = app;

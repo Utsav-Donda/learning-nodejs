@@ -25,7 +25,11 @@ const server = http.createServer((req, res) => {
 
 if (require.main === module) {
   server.listen(config.port, () => {
-    console.log(`listening on http://localhost:${config.port} (env: ${config.nodeEnv})`);
+    // Read back the actual bound port rather than config.port — when
+    // PORT=0, config.port is 0 ("let the OS pick"), but the OS assigns
+    // a real port that only server.address() knows.
+    const actualPort = server.address().port;
+    console.log(`listening on http://localhost:${actualPort} (env: ${config.nodeEnv})`);
   });
 }
 

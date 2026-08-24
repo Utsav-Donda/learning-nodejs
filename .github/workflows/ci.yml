@@ -10,11 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Covers the floor declared in package.json's "engines" field
-        # (>=18.0.0) plus the currently-active LTS lines, so CI would
-        # actually catch a Node-18-only incompatibility instead of
-        # letting the documented support floor go untested.
-        node-version: [18.x, 20.x, 22.x]
+        # Matches the floor declared in package.json's "engines" field
+        # (>=20.6.0, required by env-config-demo's use of
+        # process.loadEnvFile) plus the current LTS line.
+        node-version: [20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v4

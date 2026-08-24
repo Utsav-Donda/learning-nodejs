@@ -23,11 +23,14 @@ function requireEnv(name) {
 }
 
 function parsePort(value, fallback) {
-  // `value === undefined` (unset) falls back to the default — but
-  // PORT=0 (a real convention meaning "let the OS pick a free port")
-  // must NOT be treated as falsy and overridden, the way `Number(x) ||
-  // fallback` would incorrectly do.
-  if (value === undefined) return fallback;
+  // Unset (undefined) OR set-but-empty ("PORT=" with no value) both
+  // fall back to the default. PORT=0 (a real convention meaning "let
+  // the OS pick a free port") must NOT be treated the same way and
+  // overridden, the way the naive `Number(x) || fallback` would do —
+  // which is also why an empty string can't just fall through to
+  // Number(''), since that evaluates to 0 and would be indistinguishable
+  // from an intentional PORT=0.
+  if (value === undefined || value === '') return fallback;
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 0) {
     throw new Error(`invalid PORT: "${value}"`);
