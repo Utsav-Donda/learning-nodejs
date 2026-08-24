@@ -8,11 +8,9 @@
 //   curl http://localhost:3000/slow &
 //   (immediately) Ctrl+C in the server's terminal
 const http = require('node:http');
+const { parsePort } = require('./parse-port.js');
 
-// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
-// convention meaning "let the OS assign a free port") since "0" is
-// truthy as a string but 0 is falsy as a number.
-const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
+const PORT = parsePort(process.env.PORT, 3000);
 
 const server = http.createServer((req, res) => {
   if (req.url === '/slow') {

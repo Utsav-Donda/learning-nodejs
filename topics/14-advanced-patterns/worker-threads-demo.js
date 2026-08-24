@@ -31,9 +31,21 @@ if (isMainThread) {
       const heartbeat = startHeartbeat('main thread stays responsive');
 
       const start = Date.now();
-      // __filename re-runs this same file, but as a worker this time —
-      // the isMainThread check below routes it to the worker branch.
-      const worker = new Worker(__filename, { workerData: { n: N } });
+
+      let worker;
+      try {
+        // __filename re-runs this same file, but as a worker this
+        // time — the isMainThread check below routes it to the worker
+        // branch. The constructor can throw synchronously (e.g. thread
+        // creation exhaustion, invalid execArgv) — without this catch,
+        // that would skip every handler below and leave the heartbeat
+        // interval started above running forever.
+        worker = new Worker(__filename, { workerData: { n: N } });
+      } catch (err) {
+        clearInterval(heartbeat);
+        reject(err);
+        return;
+      }
 
       // clearInterval is safe to call more than once, so each handler
       // clears it independently rather than relying on exactly one of

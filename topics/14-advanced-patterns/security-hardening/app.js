@@ -12,24 +12,31 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-app.use(express.json());
+
+// helmet and rate limiting are registered BEFORE express.json() below —
+// Express runs middleware in registration order, and express.json()
+// throws (a SyntaxError) on a malformed body, which skips straight to
+// the error-handling middleware at the bottom, bypassing anything
+// registered AFTER it. Registering these first means every request —
+// even one with an invalid JSON body — still gets helmet's headers and
+// counts against the rate limits, instead of malformed requests
+// slipping through both unprotected.
 
 // helmet sets ~15 security-related headers (X-Content-Type-Options,
 // Strict-Transport-Security, disables X-Powered-By, etc.) with sane
 // defaults — cheap, broad protection with one line.
 app.use(helmet());
 
-// Rate limiting middleware must be registered BEFORE the routes it's
-// meant to protect — Express runs middleware/routes in registration
-// order, so a limiter added after a route has already matched and
-// responded would never actually run for that route.
-//
 // A generous limiter applies to everything by default...
 app.use(rateLimit({ windowMs: 60 * 1000, limit: 100 }));
 
 // ...and a stricter one is layered on top of just the login route —
 // attempted logins are exactly the kind of endpoint brute-force
 // attacks target, so it gets a tighter budget than the rest of the app.
+// Mounted with app.use('/login', ...) (path-scoped, runs for any
+// method) rather than attached only to the POST handler further down —
+// that way it still counts a malformed-JSON request against the same
+// budget, since path-scoped middleware runs before body parsing too.
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   limit: 5, // 5 attempts per window per IP
@@ -37,12 +44,15 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'too many login attempts, try again in a minute' },
 });
+app.use('/login', loginLimiter);
+
+app.use(express.json());
 
 app.get('/', (req, res) => {
   res.json({ message: 'try `curl -i` to see the security headers helmet added' });
 });
 
-app.post('/login', loginLimiter, (req, res) => {
+app.post('/login', (req, res) => {
   // Deliberately simplified: real auth would hash-compare a password
   // (see topic 08) — the point here is the rate limiter in front of it.
   const { username } = req.body ?? {};
@@ -79,11 +89,20 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message });
 });
 
+// Deliberately duplicated (not imported) from ../parse-port.js — this
+// folder is meant to be self-contained, matching topic 13's per-demo
+// convention (see topics/13-deployment/docker-demo/parse-port.js).
+function parsePort(value, fallback) {
+  if (value === undefined || value.trim() === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+    throw new Error(`invalid PORT: "${value}"`);
+  }
+  return parsed;
+}
+
 if (require.main === module) {
-  // process.env.PORT || 3000 would incorrectly override PORT=0 (a real
-  // convention meaning "let the OS assign a free port") since "0" is
-  // truthy as a string but 0 is falsy as a number.
-  const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
+  const PORT = parsePort(process.env.PORT, 3000);
   app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
 }
 

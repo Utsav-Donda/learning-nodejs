@@ -7,12 +7,9 @@
 //   for i in $(seq 1 5); do curl "http://localhost:3000/?n=32"; done
 const http = require('node:http');
 const { fibonacci } = require('./fibonacci.js');
+const { parsePort } = require('./parse-port.js');
 
-// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
-// convention meaning "let the OS assign a free port") since "0" is
-// truthy as a string but 0 is falsy as a number — the same class of
-// bug this file's own ?n= parsing below is careful to avoid.
-const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
+const PORT = parsePort(process.env.PORT, 3000);
 
 // Caps how expensive a single request can be — fib(N) grows
 // exponentially, so an unbounded ?n= would let any client monopolize
