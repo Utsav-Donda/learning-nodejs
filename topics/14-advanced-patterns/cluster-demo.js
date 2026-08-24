@@ -77,7 +77,18 @@ if (cluster.isPrimary) {
           process.exit(0);
         }
       });
-      worker.send('shutdown');
+
+      // A worker can have already disconnected on its own by this
+      // point — e.g. it received SIGINT directly via POSIX process-
+      // group signal delivery (see the worker branch below) and
+      // finished draining before this loop reached it. Calling
+      // worker.send() on an already-disconnected worker emits an
+      // unhandled 'error' event, which crashes the primary — checking
+      // first avoids that; the 'exit' listener above still fires
+      // either way once the worker is actually gone.
+      if (worker.isConnected()) {
+        worker.send('shutdown');
+      }
     }
 
     // Safety net: if a worker hangs (e.g. a request that never

@@ -10,6 +10,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { parsePort } = require('../parse-port.js');
 
 const app = express();
 
@@ -88,18 +89,6 @@ app.use((err, req, res, next) => {
   const message = status < 500 ? err.message : 'internal server error';
   res.status(status).json({ error: message });
 });
-
-// Deliberately duplicated (not imported) from ../parse-port.js — this
-// folder is meant to be self-contained, matching topic 13's per-demo
-// convention (see topics/13-deployment/docker-demo/parse-port.js).
-function parsePort(value, fallback) {
-  if (value === undefined || value.trim() === '') return fallback;
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
-    throw new Error(`invalid PORT: "${value}"`);
-  }
-  return parsed;
-}
 
 if (require.main === module) {
   const PORT = parsePort(process.env.PORT, 3000);
