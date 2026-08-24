@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Socket.IO Chat Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 480px; margin: 2rem auto; }
+    #messages { list-style: none; padding: 0; height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 0.5rem; }
+    #messages li { margin-bottom: 0.25rem; }
+    .system { color: #888; font-style: italic; }
+    form { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    input { flex: 1; padding: 0.4rem; }
+  </style>
+</head>
+<body>
+  <h1>Socket.IO Chat Demo</h1>
+
+  <div id="join">
+    <input id="username" placeholder="Your name" />
+    <input id="room" placeholder="Room name" value="general" />
+    <button id="join-btn">Join</button>
+  </div>
+
+  <ul id="messages"></ul>
+
+  <form id="chat-form" style="display: none;">
+    <input id="chat-input" placeholder="Type a message..." autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
+
+  <!-- Socket.IO auto-serves its client bundle from this path — no CDN needed. -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const messages = document.getElementById('messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    function addLine(text, className) {
+      const li = document.createElement('li');
+      li.textContent = text;
+      if (className) li.className = className;
+      messages.appendChild(li);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    document.getElementById('join-btn').addEventListener('click', () => {
+      const username = document.getElementById('username').value.trim() || 'anonymous';
+      const room = document.getElementById('room').value.trim() || 'general';
+      socket.emit('join-room', { username, room });
+      chatForm.style.display = 'flex';
+    });
+
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!chatInput.value.trim()) return;
+      socket.emit('chat-message', chatInput.value);
+      chatInput.value = '';
+    });
+
+    socket.on('system-message', (text) => addLine(text, 'system'));
+    socket.on('chat-message', ({ username, text }) => addLine(`${username}: ${text}`));
+  </script>
+</body>
+</html>
