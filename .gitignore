@@ -40,6 +40,7 @@ pids/
 
 # Scratch files created by running the examples
 .scratch-demo.txt
+.scratch-*
 watched-tmp/
 
 # Package manager
