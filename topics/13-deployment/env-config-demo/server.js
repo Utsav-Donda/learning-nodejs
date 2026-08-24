@@ -12,18 +12,24 @@ const config = require('./config.js');
 
 const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
+  // Never echo the real API key back in a response. There's also no
+  // "apiKeyLoaded" field to report here — config.js's requireEnv()
+  // already throws at startup if it's missing, so by the time a
+  // request reaches this handler it's guaranteed to be set; getting
+  // any response at all is the proof that it loaded.
   res.end(JSON.stringify({
     message: 'server is running',
     environment: config.nodeEnv,
-    // Never echo the real API key back in a response — this redacts it
-    // to prove config loaded without leaking the secret.
-    apiKeyLoaded: Boolean(config.apiKey),
   }));
 });
 
 if (require.main === module) {
   server.listen(config.port, () => {
-    console.log(`listening on http://localhost:${config.port} (env: ${config.nodeEnv})`);
+    // Read back the actual bound port rather than config.port — when
+    // PORT=0, config.port is 0 ("let the OS pick"), but the OS assigns
+    // a real port that only server.address() knows.
+    const actualPort = server.address().port;
+    console.log(`listening on http://localhost:${actualPort} (env: ${config.nodeEnv})`);
   });
 }
 
