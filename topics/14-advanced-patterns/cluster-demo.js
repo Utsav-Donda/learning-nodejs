@@ -135,6 +135,11 @@ if (cluster.isPrimary) {
     // on THIS worker to finish before exiting — the same pattern
     // graceful-shutdown-demo.js uses for a single, non-clustered server.
     server.close(() => process.exit(0));
+    // server.close()'s callback also waits for idle keep-alive
+    // connections, not just in-flight requests — closing those
+    // immediately means this worker only actually waits on genuine
+    // in-flight work (see graceful-shutdown-demo.js for more on this).
+    server.closeIdleConnections();
   }
 
   // Two independent paths can trigger a graceful drain here: the IPC
