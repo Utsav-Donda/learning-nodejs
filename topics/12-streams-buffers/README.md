@@ -20,7 +20,11 @@ Node's streaming primitives for handling data efficiently, especially at scale.
 
 ## Examples
 
-Add runnable examples here, e.g. `buffer-basics.js`, `transform-stream-demo.js`, `large-file-pipeline.js`.
+- [`buffer-basics.js`](buffer-basics.js) — creating buffers, encodings (utf-8/hex/base64), concatenation, and why slicing shares memory with the original buffer instead of copying it.
+- [`transform-stream-demo.js`](transform-stream-demo.js) — a custom `Transform` stream that uppercases text, connected with `stream/promises`' `pipeline()` for automatic error propagation and cleanup (exercise 1 solution).
+- [`large-file-pipeline.js`](large-file-pipeline.js) — generates a 200,000-line file while respecting backpressure (`write()`'s return value + the `'drain'` event), then counts its lines with a streaming `readline` interface and reports heap growth to show memory stays roughly flat regardless of file size (exercise 2 solution).
+
+Run any of them with `node <file>.js` — each cleans up its own scratch files when it finishes.
 
 ## Exercises
 
