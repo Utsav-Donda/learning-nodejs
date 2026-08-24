@@ -21,11 +21,11 @@ Deeper runtime and production-hardening topics for scaling and securing Node.js 
 
 ## Examples
 
-- [`worker-threads-demo.js`](worker-threads-demo.js) — runs `fib(40)` on the main thread (freezing a concurrent heartbeat timer) vs. in a worker thread (heartbeat keeps firing), to make the blocking difference visible (exercise 1 solution).
+- [`worker-threads-demo.js`](worker-threads-demo.js) — runs `fib(40)` on the main thread (freezing a concurrent heartbeat timer) vs. in a worker thread (heartbeat keeps firing), to make the blocking difference visible (exercise 1 solution). Shares [`fibonacci.js`](fibonacci.js) with `profiling-target.js` below.
   `node worker-threads-demo.js`
-- [`cluster-demo.js`](cluster-demo.js) — forks one worker process per CPU core sharing one port, replaces a worker if it crashes, and shuts down cleanly on `SIGINT`/`SIGTERM`.
+- [`cluster-demo.js`](cluster-demo.js) — forks one worker process per CPU core sharing one port, replaces a worker if it crashes, and — on `SIGINT`/`SIGTERM` — tells every worker to drain its in-flight requests (`server.close()`) via an IPC message and waits for all of them to actually exit before the primary itself exits, rather than just killing everything and exiting immediately.
   `node cluster-demo.js`, then `curl http://localhost:3000` a few times. **Windows note:** `cluster`'s round-robin scheduling isn't available there (the OS distributes connections instead), so one worker may answer most/all requests in a short test — that's expected, not a bug. Stop with Ctrl+C; on Windows, `SIGTERM` isn't reliably delivered the way it is on Linux/macOS (see the code comments).
-- [`security-hardening/`](security-hardening/) — adds `helmet` (security headers), `express-rate-limit` (a stricter limiter on `/login`, a looser one everywhere else), and basic input-type validation to an Express app (exercise 2 solution).
+- [`security-hardening/`](security-hardening/) — adds `helmet` (security headers), `express-rate-limit` (a stricter limiter on `/login`, a looser one everywhere else), basic input-type validation, and — matching topic 10's pattern — a JSON 404 handler and centralized error-handling middleware, so a malformed request never falls through to Express's default error page (which can include a stack trace) (exercise 2 solution).
   `node security-hardening/app.js`, then `curl -i http://localhost:3000/` to see the headers helmet adds, or hammer `/login` past 5 requests/minute to see a 429.
 - [`graceful-shutdown-demo.js`](graceful-shutdown-demo.js) — on `SIGINT`/`SIGTERM`, stops accepting new connections but waits for in-flight requests to finish (with a force-exit safety-net timeout) before exiting.
   `node graceful-shutdown-demo.js`, start a slow request (`curl http://localhost:3000/slow &`), then Ctrl+C the server immediately and watch it wait ~3s for that request before actually exiting.

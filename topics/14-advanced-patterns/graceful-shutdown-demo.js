@@ -9,7 +9,10 @@
 //   (immediately) Ctrl+C in the server's terminal
 const http = require('node:http');
 
-const PORT = process.env.PORT || 3000;
+// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
+// convention meaning "let the OS assign a free port") since "0" is
+// truthy as a string but 0 is falsy as a number.
+const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
 
 const server = http.createServer((req, res) => {
   if (req.url === '/slow') {
@@ -37,11 +40,6 @@ function shutdown(signal) {
   // Stops the server from accepting new connections, but — unlike just
   // killing the process — waits for requests already in progress to
   // finish before its callback fires.
-  server.close(() => {
-    console.log('all in-flight requests finished, exiting cleanly');
-    process.exit(0);
-  });
-
   // Safety net: if something hangs (a request that never resolves, a
   // stuck DB connection) and server.close()'s callback never fires,
   // force-exit after a timeout rather than hanging forever. A real
@@ -53,13 +51,19 @@ function shutdown(signal) {
     process.exit(1);
   }, FORCE_EXIT_MS);
   forceExitTimer.unref(); // doesn't itself keep the process alive if everything else already exited
+
+  server.close(() => {
+    clearTimeout(forceExitTimer); // avoid a spurious force-exit timer left dangling on the clean path
+    console.log('all in-flight requests finished, exiting cleanly');
+    process.exit(0);
+  });
 }
 
-// See topic 13's deployment notes and cluster-demo.js's comment on
-// this same repo: Windows doesn't reliably deliver SIGTERM the way
-// Linux/macOS do (Node/libuv emulate SIGINT there via Ctrl+C, but not
-// SIGTERM) — both handlers matter for real deployments, but on
-// Windows, test this with Ctrl+C specifically.
+// Windows doesn't reliably deliver SIGTERM the way Linux/macOS do
+// (Node/libuv emulate SIGINT there via Ctrl+C, but not SIGTERM — see
+// cluster-demo.js's comment in this same topic for more on this) —
+// both handlers matter for real deployments, but on Windows, test this
+// with Ctrl+C specifically.
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 

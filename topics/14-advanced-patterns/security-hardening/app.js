@@ -58,8 +58,32 @@ app.post('/login', loginLimiter, (req, res) => {
   res.json({ message: `login attempt received for "${username}"` });
 });
 
+// A catch-all 404, matching topic 10's pattern — without this,
+// unmatched routes fall through to Express's default (non-JSON) 404
+// page, inconsistent with every other response this "hardened" app
+// returns.
+app.use((req, res) => {
+  res.status(404).json({ error: 'not found' });
+});
+
+// Error-handling middleware, also matching topic 10's pattern — without
+// this, an error (e.g. body-parser's SyntaxError on malformed JSON)
+// falls through to Express's default error handler, which can include
+// the error's stack trace/internal file paths in the response — exactly
+// the kind of information disclosure a "security hardening" example
+// shouldn't leave in place.
+app.use((err, req, res, next) => {
+  console.error(err);
+  const status = err.status || err.statusCode || 500;
+  const message = status < 500 ? err.message : 'internal server error';
+  res.status(status).json({ error: message });
+});
+
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
+  // process.env.PORT || 3000 would incorrectly override PORT=0 (a real
+  // convention meaning "let the OS assign a free port") since "0" is
+  // truthy as a string but 0 is falsy as a number.
+  const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
   app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
 }
 

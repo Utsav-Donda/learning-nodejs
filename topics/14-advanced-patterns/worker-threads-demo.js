@@ -5,21 +5,19 @@
 //
 // Run: node worker-threads-demo.js
 const { Worker, isMainThread, parentPort, workerData } = require('node:worker_threads');
-
-// A deliberately slow, synchronous CPU-bound function — the kind of
-// work that would freeze an HTTP server's event loop if run inline.
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
+const { fibonacci } = require('./fibonacci.js');
 
 if (isMainThread) {
   const N = 40;
 
+  function startHeartbeat(message) {
+    let count = 0;
+    return setInterval(() => console.log(`  (heartbeat ${++count} — ${message})`), 200);
+  }
+
   async function runOnMainThread() {
     console.log(`\n--- running fib(${N}) directly on the main thread ---`);
-    let heartbeats = 0;
-    const heartbeat = setInterval(() => console.log(`  (heartbeat ${++heartbeats} — but nothing else can run until fib finishes)`), 200);
+    const heartbeat = startHeartbeat('but nothing else can run until fib finishes');
 
     const start = Date.now();
     const result = fibonacci(N);
@@ -30,14 +28,20 @@ if (isMainThread) {
   function runInWorker() {
     return new Promise((resolve, reject) => {
       console.log(`\n--- running fib(${N}) in a worker thread ---`);
-      let heartbeats = 0;
-      const heartbeat = setInterval(() => console.log(`  (heartbeat ${++heartbeats} — main thread stays responsive)`), 200);
+      const heartbeat = startHeartbeat('main thread stays responsive');
 
       const start = Date.now();
       // __filename re-runs this same file, but as a worker this time —
       // the isMainThread check below routes it to the worker branch.
       const worker = new Worker(__filename, { workerData: { n: N } });
 
+      // clearInterval is safe to call more than once, so each handler
+      // clears it independently rather than relying on exactly one of
+      // these three events firing — 'exit' in particular can fire on
+      // its own (e.g. after worker.terminate(), or a native/OOM crash)
+      // without 'error' firing first, and a heartbeat interval left
+      // running keeps the process alive indefinitely since it's never
+      // unref()'d.
       worker.on('message', (result) => {
         clearInterval(heartbeat);
         console.log(`worker result: ${result} in ${Date.now() - start}ms`);
@@ -50,6 +54,7 @@ if (isMainThread) {
       });
 
       worker.on('exit', (code) => {
+        clearInterval(heartbeat);
         if (code !== 0) reject(new Error(`worker stopped with exit code ${code}`));
       });
     });

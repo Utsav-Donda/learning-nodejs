@@ -6,13 +6,20 @@
 // path works). Hit it a few times to generate profiling data:
 //   for i in $(seq 1 5); do curl "http://localhost:3000/?n=32"; done
 const http = require('node:http');
+const { fibonacci } = require('./fibonacci.js');
 
-const PORT = process.env.PORT || 3000;
+// process.env.PORT || 3000 would incorrectly override PORT=0 (a real
+// convention meaning "let the OS assign a free port") since "0" is
+// truthy as a string but 0 is falsy as a number — the same class of
+// bug this file's own ?n= parsing below is careful to avoid.
+const PORT = process.env.PORT !== undefined ? Number(process.env.PORT) : 3000;
 
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
+// Caps how expensive a single request can be — fib(N) grows
+// exponentially, so an unbounded ?n= would let any client monopolize
+// this single-threaded server's event loop for as long as they like
+// (a trivial DoS). 40 is already several seconds; that's plenty for
+// generating profiler data without letting a request run indefinitely.
+const MAX_N = 40;
 
 const server = http.createServer((req, res) => {
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
@@ -21,7 +28,7 @@ const server = http.createServer((req, res) => {
   // and silently substitute 30, since 0 is falsy — the same class of
   // bug topic 13 hit repeatedly with PORT=0. Parse explicitly instead.
   const parsed = raw === null ? NaN : Number(raw);
-  const n = Number.isInteger(parsed) && parsed >= 0 ? parsed : 30;
+  const n = Number.isInteger(parsed) && parsed >= 0 && parsed <= MAX_N ? parsed : 30;
 
   const start = Date.now();
   const result = fibonacci(n);
