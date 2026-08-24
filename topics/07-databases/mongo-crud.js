@@ -8,7 +8,10 @@
 const { MongoClient, ObjectId } = require('mongodb');
 
 const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const client = new MongoClient(uri);
+// The driver's default serverSelectionTimeoutMS is 30s, which reads as a
+// hang for a demo script — fail fast instead so the catch block below
+// reports a clear error quickly when no MongoDB instance is reachable.
+const client = new MongoClient(uri, { serverSelectionTimeoutMS: 3000 });
 
 async function withCollection(fn) {
   await client.connect();

@@ -74,7 +74,13 @@ app.use((req, res) => errorResponse(res, 404, 'route not found'));
 
 app.use((err, req, res, next) => {
   console.error(err);
-  errorResponse(res, 500, 'internal server error');
+  // Respect a status already attached to the error (e.g. body-parser
+  // sets 400 for malformed JSON) — only fall back to 500 for truly
+  // unexpected errors, and only expose the raw message for 4xx, since
+  // 5xx messages can leak internals.
+  const status = err.status || err.statusCode || 500;
+  const message = status < 500 ? err.message : 'internal server error';
+  errorResponse(res, status, message);
 });
 
 if (require.main === module) {

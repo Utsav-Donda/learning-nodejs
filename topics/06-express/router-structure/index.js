@@ -28,7 +28,11 @@ app.use((req, res) => {
 // by arity. It must be registered last, after all routes.
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ error: 'internal server error', message: err.message });
+  // Respect a status already attached to the error (e.g. body-parser
+  // sets 400 for malformed JSON) instead of always answering 500.
+  const status = err.status || err.statusCode || 500;
+  const message = status < 500 ? err.message : 'internal server error';
+  res.status(status).json({ error: message });
 });
 
 if (require.main === module) {

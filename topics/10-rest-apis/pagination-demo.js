@@ -30,9 +30,15 @@ app.get('/products', (req, res) => {
 
   // --- sorting: ?sort=price (asc) or ?sort=-price (desc) ---
   if (req.query.sort) {
-    const field = req.query.sort.replace(/^-/, '');
-    const direction = req.query.sort.startsWith('-') ? -1 : 1;
-    results.sort((a, b) => (a[field] > b[field] ? 1 : -1) * direction);
+    // Express parses a repeated query key (?sort=a&sort=b) as an array —
+    // take the last one so this never crashes on unexpected input.
+    const sortParam = Array.isArray(req.query.sort) ? req.query.sort.at(-1) : req.query.sort;
+    const field = sortParam.replace(/^-/, '');
+    const direction = sortParam.startsWith('-') ? -1 : 1;
+    results.sort((a, b) => {
+      if (a[field] === b[field]) return 0; // preserve relative order for ties
+      return (a[field] > b[field] ? 1 : -1) * direction;
+    });
   }
 
   // --- pagination ---
