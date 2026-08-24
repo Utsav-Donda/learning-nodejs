@@ -50,12 +50,16 @@ app.get('/health', (req, res) => {
 });
 
 if (require.main === module) {
-  const server = app.listen(PORT, () => {
-    // Read back the actual bound port — with PORT=0 ("let the OS
-    // assign a free port"), the OS-chosen port is only known via
-    // server.address(), not the PORT const itself.
-    console.log(`listening on http://localhost:${server.address().port}`);
-  });
+  // No need to read back server.address().port here the way
+  // pm2-demo/env-config-demo do — parsePort() above already rejects
+  // PORT=0, so PORT is guaranteed to equal whatever port was actually
+  // bound by the time this callback runs.
+  app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
 }
+
+// Exposes parsePort so it can be unit-tested (see parse-port.test.js)
+// without changing what `require('./app.js')` returns for normal use
+// — it's still the Express app itself, just with one extra property.
+app.parsePort = parsePort;
 
 module.exports = app;

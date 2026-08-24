@@ -28,7 +28,7 @@ Taking a Node.js app from local development to a running production service.
   `cd docker-demo && docker build -t docker-demo . && docker run --rm -p 3000:3000 docker-demo`
 - [`pm2-demo/`](pm2-demo/) — an [`ecosystem.config.js`](pm2-demo/ecosystem.config.js) with `autorestart`, a restart cap, and a memory-based restart limit; [`app.js`](pm2-demo/app.js) has a `/crash` route to trigger PM2's auto-restart on purpose.
   `cd pm2-demo && npx pm2 start ecosystem.config.js`, then `curl http://localhost:3000/crash` and `npx pm2 status` to watch it recover.
-- [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — a real GitHub Actions workflow (not just an example) that runs `npm ci && npm test` against Node 20.x and 22.x on every push/PR to this repo (exercise 2 solution).
+- [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — a real GitHub Actions workflow (not just an example) that runs `npm ci && npm test` against Node 18.x, 20.x, and 22.x on every push/PR to this repo (exercise 2 solution).
 
 > **Note on `docker-demo/`:** the Dockerfile was written and reviewed carefully but could not be build-tested in the environment this repo was authored in (Docker daemon unavailable there) — build and run it locally to confirm it works for you, and open an issue if something's off.
 
