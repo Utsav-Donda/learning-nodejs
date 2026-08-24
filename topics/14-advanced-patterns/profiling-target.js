@@ -40,4 +40,12 @@ server.listen(PORT, () => {
   console.log(`try: curl "http://localhost:${PORT}/?n=35"`);
 });
 
+// Without this, a bind failure (e.g. the port is already in use by
+// another running demo) crashes the process with a raw, confusing
+// stack trace instead of a clear message.
+server.on('error', (err) => {
+  console.error('server error:', err.message);
+  process.exitCode = 1;
+});
+
 module.exports = server;

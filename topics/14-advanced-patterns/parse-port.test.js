@@ -66,6 +66,14 @@ describe('parsePort', () => {
     assert.throws(() => parsePort({}, 3000), /invalid PORT/);
   });
 
+  test('an array is rejected outright, not silently treated as unset', () => {
+    // String([]) === '' and Number([]) === 0 are both real JS quirks —
+    // coercing through String()/Number() (an earlier version of this
+    // function did) would have silently treated [] as "unset" and
+    // fallen back to the default instead of flagging it as invalid.
+    assert.throws(() => parsePort([], 3000), /invalid PORT/);
+  });
+
   test('a numeric (non-string) value still parses correctly', () => {
     assert.equal(parsePort(8080, 3000), 8080);
   });

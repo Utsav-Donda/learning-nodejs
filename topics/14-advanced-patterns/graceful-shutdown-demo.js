@@ -28,6 +28,14 @@ server.listen(PORT, () => {
   console.log(`[pid ${process.pid}] listening on http://localhost:${PORT}`);
 });
 
+// Without this, a bind failure (e.g. the port is already in use by
+// another running demo) crashes the process with a raw, confusing
+// stack trace instead of a clear message.
+server.on('error', (err) => {
+  console.error('server error:', err.message);
+  process.exitCode = 1;
+});
+
 let shuttingDown = false;
 
 function shutdown(signal) {

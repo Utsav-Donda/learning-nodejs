@@ -37,9 +37,36 @@ if (cluster.isPrimary) {
     cluster.fork();
   }
 
+  // Caps how many times workers can be respawned in a short window —
+  // matches topic 13's PM2 max_restarts idea. Without this, a
+  // fundamental failure every worker hits identically (e.g. the port
+  // can't be bound at all: permission denied, or already in use) would
+  // crash-and-refork every worker forever, flooding the console and
+  // burning CPU without ever serving a request.
+  const restartTimestamps = [];
+  const MAX_RESTARTS = 5;
+  const RESTART_WINDOW_MS = 10_000;
+
   cluster.on('exit', (worker, code, signal) => {
     console.log(`worker ${worker.process.pid} died (code ${code}, signal ${signal})`);
     if (shuttingDown) return;
+
+    const now = Date.now();
+    restartTimestamps.push(now);
+    while (restartTimestamps.length > 0 && now - restartTimestamps[0] > RESTART_WINDOW_MS) {
+      restartTimestamps.shift();
+    }
+
+    if (restartTimestamps.length > MAX_RESTARTS) {
+      console.error(
+        `${restartTimestamps.length} workers died within ${RESTART_WINDOW_MS}ms — ` +
+        `something is fundamentally broken (e.g. the port can't be bound at all). ` +
+        `Giving up instead of restart-looping forever.`
+      );
+      process.exit(1);
+      return;
+    }
+
     console.log('  restarting it');
     // A crashed worker doesn't take the whole service down — the
     // primary just replaces it, matching the same resilience idea
@@ -96,7 +123,14 @@ if (cluster.isPrimary) {
     // closed rather than hanging forever.
     const forceExitTimer = setTimeout(() => {
       console.error('workers did not exit in time — forcing shutdown');
-      for (const worker of Object.values(cluster.workers)) worker.kill();
+      // worker.kill() (used for the graceful path above) actually
+      // attempts a graceful IPC disconnect first and only escalates to
+      // an OS signal once that completes — exactly the negotiation a
+      // genuinely stuck worker (the only reason this timer fires at
+      // all) won't honor. worker.process.kill('SIGKILL') goes straight
+      // to the OS, bypassing the worker's own code entirely — it can't
+      // be caught, ignored, or delayed the way SIGTERM can.
+      for (const worker of Object.values(cluster.workers)) worker.process.kill('SIGKILL');
       process.exit(1);
     }, 10_000);
     forceExitTimer.unref();
@@ -126,6 +160,18 @@ if (cluster.isPrimary) {
 
   server.listen(PORT);
   console.log(`worker ${process.pid} listening`);
+
+  // Without this, a bind failure (e.g. the port is already in use, or
+  // permission denied for a privileged port) crashes this worker with
+  // a raw, confusing stack trace instead of a clear message — the
+  // worker still dies either way, but this makes the primary's
+  // restart-loop-protection log (above) actually make sense to a
+  // reader instead of just seeing "worker died (code 1)" repeatedly
+  // with no explanation.
+  server.on('error', (err) => {
+    console.error(`worker ${process.pid} server error:`, err.message);
+    process.exit(1);
+  });
 
   let workerShuttingDown = false;
   function drainAndExit() {

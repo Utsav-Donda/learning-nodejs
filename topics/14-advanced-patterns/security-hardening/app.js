@@ -92,7 +92,15 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   const PORT = parsePort(process.env.PORT, 3000);
-  app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
+  const server = app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
+
+  // Without this, a bind failure (e.g. the port is already in use by
+  // another running demo) crashes the process with a raw, confusing
+  // stack trace instead of a clear message.
+  server.on('error', (err) => {
+    console.error('server error:', err.message);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = app;
