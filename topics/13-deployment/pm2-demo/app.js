@@ -1,22 +1,13 @@
 // The app being process-managed — logs its PID on startup so it's easy
 // to see PM2 restart it with a new PID after a crash or `pm2 restart`.
 const http = require('node:http');
-
-// Deliberately duplicated (not imported) from env-config-demo's
-// config.js — PM2 runs this file directly by path, so keeping it
-// self-contained avoids a cross-directory require.
-function parsePort(value, fallback) {
-  // Unset or set-but-empty ("PORT=") both fall back to the default.
-  // PORT=0 (a real convention meaning "let the OS assign a free port")
-  // must NOT be treated as falsy and overridden the way a naive
-  // `Number(x) || fallback` would do.
-  if (value === undefined || value === '') return fallback;
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
-    throw new Error(`invalid PORT: "${value}"`);
-  }
-  return parsed;
-}
+// PM2 launches this file by its path (see ecosystem.config.js's
+// `script` field), but Node still resolves this relative require by
+// this file's own location, not by how the process was started — so
+// sharing env-config-demo's port-parsing helper here is safe (unlike
+// docker-demo/app.js, which genuinely can't reach outside its own
+// directory, since `docker build` only sees the docker-demo/ folder).
+const { parsePort } = require('../env-config-demo/parse-port.js');
 
 const PORT = parsePort(process.env.PORT, 3000);
 
